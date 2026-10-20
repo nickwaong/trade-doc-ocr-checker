@@ -1,1 +1,35 @@
-# SamplesSample trade documents for the OCR checker.
+# Build North 测试单证 · 答案卡 / Answer Key
+
+> 3 张图全部数据为虚构，仅供 OCR 功能测试。场景里故意埋了 **4 个异常**，
+> 你的 checker 应该把它们全部标红；下面"应该通过"的是不能误报的。
+
+## 测试场景（同一票货）
+- 发票 INV-2026-1018（10-18）→ 装箱单 PL-2026-1018（10-18）→ 提单 HBL-SH-TOR-1018（10-20）
+- Shanghai → Vancouver → Toronto（最终目的地），MV PACIFIC TRADER / V.012E
+- 货：硅胶厨具套装 500 sets + 骨传导运动耳机 300 pcs
+
+## 必须检出的 4 个异常 ❌
+
+| # | 类型 | 位置 | 说明 |
+|---|------|------|------|
+| 1 | 单内勾稽 | 发票第 2 行 | 300 pcs × 7.90 = **2,370.00** ≠ 票面 2,400.00 → 行金额算错 |
+| 2 | 单内勾稽 | 装箱单合计 | 500.0 + 138.0 = **638.0 kg** ≠ 票面总毛重 640.0 kg → 合计毛重不符 |
+| 3 | 单单不符 | 收货人 | 发票/装箱单 "Maple Leaf Trading Inc." vs 提单 "**Maple Trading Inc.**"（少了 Leaf） |
+| 4 | 单单不符 | 总件数 | 装箱单 40 cartons vs 提单 **42 cartons** |
+
+## 应该通过、不该误报的 ✅
+- 币种 USD 三单一致；发票日期 10-18 早于提单签发 10-20（日期逻辑 OK）
+- 装箱单：总净重 462.5 + 120.0 = 582.5 ✓；总箱数 25 + 15 = 40 ✓
+- 船名航次、装货港 Shanghai、卸货港 Vancouver、最终目的地 Toronto 三单一致
+- 体积 4.80 CBM 三单一致；提单毛重 640.0 kg = 装箱单票面合计（重量跨单证一致，不该误报）
+
+## 用法建议（对照你的 10 天计划）
+- **Day 3–4（今天/明天）**：拿第 1 张（发票）调 Claude Vision prompt，验证"图片→结构化 JSON + 行内勾稽标红"
+- **Day 7（10-22）**：三张一起测 stretch 功能"单单相符/不符清单"，对照上面 4 个异常验收
+- **Day 8（10-23）**：端到端测试时把这 3 张放进样本集，确认无误报
+
+## 文件
+- `sample-01-commercial-invoice.png` — 商业发票
+- `sample-02-packing-list.png` — 装箱单
+- `sample-03-bill-of-lading.png` — 海运提单（House B/L）
+- `gen_fixtures.py` — 生成脚本（改数字重新跑即可出新版本）
